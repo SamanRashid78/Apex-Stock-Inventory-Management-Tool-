@@ -56,7 +56,8 @@ apexstock/
 - No user authentication or role-based access
 - No change history or audit log
 
-**Planned:** Firebase/Supabase backend for multi-device sync, user login, and change history.
+**Planned:** 
+Firebase/Supabase backend for multi-device sync, user login, and change history.
 
 ## License
 
