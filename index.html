@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ApexStock // Business Stock Tracker</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  <!-- jsPDF CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <i data-lucide="package"></i>
+        </div>
+        <div>
+          <h1>ApexStock</h1>
+          <p class="subtitle">System Status: Active &bull; Local Storage Mode</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-export-csv" class="btn btn-secondary">
+          <i data-lucide="file-spreadsheet"></i> Export CSV
+        </button>
+        <button id="btn-export-pdf" class="btn btn-primary">
+          <i data-lucide="file-text"></i> Export PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Dashboard Summary Stats -->
+    <section class="dashboard-stats">
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Total Products</span>
+          <span id="stat-total-products" class="stat-value">0</span>
+        </div>
+        <div class="stat-icon icon-blue">
+          <i data-lucide="boxes"></i>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Total Stock Value</span>
+          <span id="stat-total-value" class="stat-value">Rs. 0.00</span>
+        </div>
+        <div class="stat-icon icon-green">
+          <i data-lucide="circle-dollar-sign"></i>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Low Stock Alert</span>
+          <span id="stat-low-stock" class="stat-value">0</span>
+        </div>
+        <div class="stat-icon icon-orange">
+          <i data-lucide="alert-triangle"></i>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Out of Stock</span>
+          <span id="stat-out-of-stock" class="stat-value">0</span>
+        </div>
+        <div class="stat-icon icon-red">
+          <i data-lucide="slash"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Workspace Layout -->
+    <main class="main-workspace">
+      <!-- Left Column: Add / Edit Form -->
+      <aside class="workspace-sidebar">
+        <div class="card form-card">
+          <div class="card-header">
+            <h2 id="form-title">Add New Product</h2>
+            <p class="card-subtitle">Fill in the product details to add or update stock</p>
+          </div>
+          <form id="product-form" novalidate>
+            <input type="hidden" id="product-id">
+            
+            <div class="form-group">
+              <label for="product-name">Product Name *</label>
+              <input type="text" id="product-name" required placeholder="e.g. Wireless Mouse">
+              <span class="error-msg" id="err-name">Product name is required</span>
+            </div>
+
+            <div class="form-group">
+              <label for="product-category">Category *</label>
+              <input type="text" id="product-category" required placeholder="e.g. Electronics" list="category-suggestions">
+              <datalist id="category-suggestions">
+                <!-- Dynamically populated categories -->
+              </datalist>
+              <span class="error-msg" id="err-category">Category is required</span>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="product-quantity">Quantity *</label>
+                <input type="number" id="product-quantity" min="0" required placeholder="0">
+                <span class="error-msg" id="err-quantity">Enter a valid quantity (min: 0)</span>
+              </div>
+
+              <div class="form-group">
+                <label for="product-price">Unit Price (Rs.) *</label>
+                <input type="number" id="product-price" min="0" step="0.01" required placeholder="0.00">
+                <span class="error-msg" id="err-price">Enter a valid price (min: 0)</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="product-threshold">Low Stock Threshold</label>
+              <input type="number" id="product-threshold" min="1" value="10" placeholder="10">
+              <span class="error-msg" id="err-threshold">Threshold must be at least 1</span>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" id="btn-cancel-edit" class="btn btn-secondary btn-full hidden">Cancel Edit</button>
+              <button type="submit" id="btn-submit" class="btn btn-primary btn-full">Add Product</button>
+            </div>
+          </form>
+        </div>
+      </aside>
+
+      <!-- Right Column: Product Table & Filters -->
+      <section class="workspace-content">
+        <div class="card table-card">
+          <!-- Table Toolbar (Search, Filter, Reset) -->
+          <div class="table-toolbar">
+            <div class="search-box">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" id="search-input" placeholder="Search by name...">
+            </div>
+            <div class="filter-box">
+              <select id="filter-category">
+                <option value="">All Categories</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Product Table -->
+          <div class="table-responsive">
+            <table id="products-table">
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th>Category</th>
+                  <th class="text-right">Quantity</th>
+                  <th class="text-right">Unit Price (Rs.)</th>
+                  <th class="text-right">Total Value (Rs.)</th>
+                  <th>Status</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="table-body">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div id="empty-state" class="empty-state hidden">
+            <i data-lucide="inbox" class="empty-icon"></i>
+            <h3>No products found</h3>
+            <p>Try clearing your filters or add a new product to get started.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- JS Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
